@@ -94,6 +94,7 @@ class GtkUI(GtkPluginBase):
             "apply_stop_time": self.glade.get_widget("chk_apply_stop_time").get_active(),
             "apply_stop_ratio": self.glade.get_widget("chk_apply_stop_ratio").get_active(),
             "remove_torrent": self.glade.get_widget("chk_remove_torrent").get_active(),
+            "remove_data": self.glade.get_widget("chk_remove_data").get_active(),
             "default_stop_time": stop_time,
             "minimum_stop_ratio": stop_ratio
         }
@@ -109,6 +110,7 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("chk_apply_stop_time").set_active(config["apply_stop_time"])
         self.glade.get_widget("chk_apply_stop_ratio").set_active(config["apply_stop_ratio"])
         self.glade.get_widget("chk_remove_torrent").set_active(config["remove_torrent"])
+        self.glade.get_widget("chk_remove_data").set_active(config["remove_data"])
         self.glade.get_widget("txt_default_stop_time").set_text('%.02f' % config["default_stop_time"])
         self.glade.get_widget("txt_minimum_stop_ratio").set_text('%.02f' % config["minimum_stop_ratio"])
 

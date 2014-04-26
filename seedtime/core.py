@@ -49,6 +49,7 @@ CONFIG_DEFAULT = {
     "default_stop_time": 7,
     "apply_stop_time": False,
     "remove_torrent": False,
+    "remove_data": False,
     "apply_stop_ratio": False,
     "minimum_stop_ratio": 1.0,
     "torrent_stop_times":{} # torrent_id: stop_time (in hours)
@@ -106,7 +107,7 @@ class Core(CorePluginBase):
             if (torrent_status['seeding_time'] > stop_time * 3600.0 * 24.0
                 and torrent_ratio >= stop_ratio):
                 if self.config['remove_torrent']:
-                    self.torrent_manager.remove(torrent.torrent_id)
+                    self.torrent_manager.remove(torrent.torrent_id, self.config["remove_data"])
                 else:
                     torrent.pause()
 
