@@ -49,6 +49,8 @@ CONFIG_DEFAULT = {
     "default_stop_time": 7,
     "apply_stop_time": False,
     "remove_torrent": False,
+    "apply_stop_ratio": False,
+    "minimum_stop_ratio": 1.0,
     "torrent_stop_times":{} # torrent_id: stop_time (in hours)
 }
 
@@ -88,7 +90,21 @@ class Core(CorePluginBase):
             if not (torrent.state == "Seeding" and torrent.torrent_id in self.torrent_stop_times):
                 continue
             stop_time = self.torrent_stop_times[torrent.torrent_id]
-            if torrent.get_status(['seeding_time'])['seeding_time'] > stop_time * 3600.0 * 24.0:
+            # if the "minimum ratio" functionnality is not activated, set a negative minimum ratio.
+            if self.config["apply_stop_ratio"]:
+                stop_ratio = self.config["minimum_stop_ratio"]
+            else:
+                stop_ratio = -1.0
+            
+            # same ratio calculation method as Deluge's torrent.py:get_ratio()
+            torrent_status = torrent.get_status(['seeding_time', 'total_uploaded', 'total_done'])
+            if torrent_status['total_done'] > 0:
+                torrent_ratio = float(torrent_status['total_uploaded']) / float(torrent_status['total_done'])
+            else:
+                torrent_ratio = -1.0
+
+            if (torrent_status['seeding_time'] > stop_time * 3600.0 * 24.0
+                and torrent_ratio >= stop_ratio):
                 if self.config['remove_torrent']:
                     self.torrent_manager.remove(torrent.torrent_id)
                 else:

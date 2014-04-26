@@ -84,6 +84,7 @@ class GtkUI(GtkPluginBase):
 
         try:
             stop_time = float(self.glade.get_widget("txt_default_stop_time").get_text())
+            stop_ratio = float(self.glade.get_widget("txt_minimum_stop_ratio").get_text())
         except ValueError:
             self.glade.get_widget("lbl_error").set_text('You must enter a valid number!')
             return False
@@ -91,8 +92,10 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("lbl_error").set_text("")
         config = {
             "apply_stop_time": self.glade.get_widget("chk_apply_stop_time").get_active(),
+            "apply_stop_ratio": self.glade.get_widget("chk_apply_stop_ratio").get_active(),
             "remove_torrent": self.glade.get_widget("chk_remove_torrent").get_active(),
-            "default_stop_time": stop_time
+            "default_stop_time": stop_time,
+            "minimum_stop_ratio": stop_ratio
         }
         client.seedtime.set_config(config)
 
@@ -104,8 +107,10 @@ class GtkUI(GtkPluginBase):
         """callback for on show_prefs"""
         log.debug('cb get config seedtime')
         self.glade.get_widget("chk_apply_stop_time").set_active(config["apply_stop_time"])
+        self.glade.get_widget("chk_apply_stop_ratio").set_active(config["apply_stop_ratio"])
         self.glade.get_widget("chk_remove_torrent").set_active(config["remove_torrent"])
         self.glade.get_widget("txt_default_stop_time").set_text('%.02f' % config["default_stop_time"])
+        self.glade.get_widget("txt_minimum_stop_ratio").set_text('%.02f' % config["minimum_stop_ratio"])
 
 class SeedTimeMenu(gtk.MenuItem):
     def __init__(self):
