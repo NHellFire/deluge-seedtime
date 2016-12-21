@@ -50,13 +50,11 @@ CONFIG_DEFAULT = {
     "default_stop_time": 7.0,
     "default_minimum_stop_ratio": 1.0,
     "delay_time": 1,  # delay between adding torrent and setting initial seed time (in seconds)
-    "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}],
+    "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}, 'stop_ratio': 1.0}, 'remove_torrent': False}, 'remove_data': False}],
     "torrent_stop_criteria": {} # torrent_id: {'time' : stop_time (in hours), 'ratio' : minimum ratio, 'remove_torrent' : boolean, 'remove_data' : boolean}
 }
 
 class Core(CorePluginBase):
-
-    #update_interval = 30
 
     def enable(self):
         self.config = deluge.configmanager.ConfigManager("seedtime.conf", CONFIG_DEFAULT)
@@ -118,7 +116,6 @@ class Core(CorePluginBase):
     def apply_filter(self, torrent_id):
         for filter_list in self.config['filter_list']:
             search_strs = None
-            stop_time = None
             if filter_list['field'] == 'label':
                 if 'Label' in component.get("CorePluginManager").get_enabled_plugins():
                     try:  # If label plugin changes and code no longer works, ignore this filter
@@ -139,20 +136,28 @@ class Core(CorePluginBase):
                 pass
 
             if search_strs is not None:
+                match_found = False
                 for search_str in search_strs:
                     if re.search(filter_list['filter'], search_str) is not None:
-                        stop_time = filter_list['stop_time']
+                        kwargs = {'stop_time' : filter_list['stop_time'],
+                                  'min_ratio' : filter_list['stop_ratio'],
+                                  'remove_torrent' : filter_list['remove_torrent'],
+                                  'remove_data' : filter_list['remove_data']}
                         log.debug('filter %s matched %s %s' %
                                   (filter_list['filter'], filter_list['field'], search_str))
-                if stop_time is not None:
-                    log.debug('applying stop.... time %r' % stop_time)
-                    self.set_torrent(torrent_id, stop_time)
+                        log.debug('applying default stop.... time %r ... ratio %r ... remove torrent %r ... remove data %r' % 
+                                  (kwargs['stop_time'], kwargs['min_ratio'], kwargs['remove_torrent'], kwargs['remove_data']))
+                        match_found = True
+                        self.set_torrent(torrent_id, **kwargs)
+                        break
+                if match_found:
                     break  # stop looking through filter list
         else: #apply default if no filters match
-            stop_time = max(0, self.config['default_stop_time'])
-            ratio = max(0, self.config['default_minimum_stop_ratio'])
-            log.debug('applying stop.... time %r' % stop_time)
-            self.set_torrent(torrent_id, stop_time=stop_time, min_ratio=ratio)
+            kwargs = {'stop_time' : self.config['default_stop_time'],
+                      'min_ratio' : self.config['default_minimum_stop_ratio']}
+            log.debug('applying default stop.... time %r ... ratio %r' % 
+                      (kwargs['stop_time'], kwargs['min_ratio']))
+            self.set_torrent(torrent_id, **kwargs)
 
 
     def post_torrent_remove(self, torrent_id):
@@ -175,11 +180,7 @@ class Core(CorePluginBase):
         return self.config.config
 
     @export
-    def set_torrent(self, torrent_id , stop_time=None, min_ratio=None, remove_torrent=False, remove_data=False):
-        if stop_time is None:
-            stop_time = 0.0
-        if min_ratio is None:
-            min_ratio = 0.0
+    def set_torrent(self, torrent_id , stop_time=0, min_ratio=0, remove_torrent=False, remove_data=False):
         if stop_time <= 0 and min_ratio <= 0:
             del self.torrent_stop_criteria[torrent_id]
         else:
