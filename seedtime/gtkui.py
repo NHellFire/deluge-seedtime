@@ -210,7 +210,7 @@ class GtkUI(GtkPluginBase):
             "default_stop_time": self.glade.get_widget("default_stop_time").get_value(),
             "default_minimum_stop_ratio": self.glade.get_widget("default_min_ratio").get_value(),
             "delay_time": self.glade.get_widget("delay_time").get_value_as_int(),
-            "filter_list": list({'field': row[0], 'filter': row[1], 'stop_time': row[2], 'ratio': row[3], 'remove_torrent': row[4], 'remove_data': row[5]} for row in self.liststore),
+            "filter_list": list({'field': row[0], 'filter': row[1], 'stop_time': row[2], 'stop_ratio': row[3], 'remove_torrent': row[4], 'remove_data': row[5]} for row in self.liststore),
         }
         client.seedtime.set_config(config)
 
@@ -228,7 +228,7 @@ class GtkUI(GtkPluginBase):
         self.liststore = gtk.ListStore(str, str, float, float, bool, bool)
         for filter_ref in config['filter_list']:
             self.liststore.append([filter_ref['field'], filter_ref['filter'],
-                                   filter_ref['stop_time'], filter_ref['ratio'],
+                                   filter_ref['stop_time'], filter_ref['stop_ratio'],
                                    filter_ref['remove_torrent'],
                                    filter_ref['remove_data']])
 

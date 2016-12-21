@@ -51,7 +51,7 @@ CONFIG_DEFAULT = {
     "default_minimum_stop_ratio": 1.0,
     "delay_time": 1,  # delay between adding torrent and setting initial seed time (in seconds)
     "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}, 'stop_ratio': 1.0}, 'remove_torrent': False}, 'remove_data': False}],
-    "torrent_stop_criteria": {} # torrent_id: {'time' : stop_time (in hours), 'ratio' : minimum ratio, 'remove_torrent' : boolean, 'remove_data' : boolean}
+    "torrent_stop_criteria": {} # torrent_id: {'stop_time' : stop time (in hours), 'stop_ratio' : minimum ratio, 'remove_torrent' : boolean, 'remove_data' : boolean}
 }
 
 class Core(CorePluginBase):
@@ -94,8 +94,8 @@ class Core(CorePluginBase):
                 continue
             criteria = self.torrent_stop_criteria[torrent.torrent_id]
             torrent_status = torrent.get_status(['seeding_time', 'ratio'])
-            seed_time_met = criteria['time'] > 0 and torrent_status['seeding_time'] > criteria['time'] * 3600.0 * 24.0
-            ratio_met = criteria['ratio'] > 0 and torrent_status['ratio'] > criteria['ratio']
+            seed_time_met = criteria['stop_time'] > 0 and torrent_status['seeding_time'] > criteria['stop_time'] * 3600.0 * 24.0
+            ratio_met = criteria['stop_ratio'] > 0 and torrent_status['ratio'] > criteria['stop_ratio']
             if seed_time_met or ratio_met:
                 if criteria['remove_torrent']:
                     self.torrent_manager.remove(torrent.torrent_id, criteria['remove_data'])
@@ -184,8 +184,8 @@ class Core(CorePluginBase):
         if stop_time <= 0 and min_ratio <= 0:
             del self.torrent_stop_criteria[torrent_id]
         else:
-            self.torrent_stop_criteria[torrent_id] = {'time':stop_time,
-                                                      'ratio':min_ratio,
+            self.torrent_stop_criteria[torrent_id] = {'stop_time':stop_time,
+                                                      'stop_ratio':min_ratio,
                                                       'remove_torrent':remove_torrent,
                                                       'remove_data':remove_data}
         self.config.save()
@@ -194,7 +194,7 @@ class Core(CorePluginBase):
         """Returns the stop seed time for the torrent."""
         stop_time = 0.0
         if torrent_id in self.torrent_stop_criteria:
-            stop_time = self.torrent_stop_criteria[torrent_id]['time']
+            stop_time = self.torrent_stop_criteria[torrent_id]['stop_time']
         return stop_time * 3600.0 * 24.0
 
     def _status_get_remaining_seed_time(self, torrent_id):
@@ -208,5 +208,5 @@ class Core(CorePluginBase):
         """Returns the stop seed minimum ratio for the torrent."""
         ratio = 0.0
         if torrent_id in self.torrent_stop_criteria:
-            ratio = self.torrent_stop_criteria[torrent_id]['ratio']
+            ratio = self.torrent_stop_criteria[torrent_id]['stop_ratio']
         return ratio

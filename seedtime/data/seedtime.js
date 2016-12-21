@@ -131,7 +131,10 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
             fields : [
               {name : 'field', type : 'string'},
               {name : 'filter', type : 'string'},
-              {name : 'stoptime', type : 'float'},
+              {name : 'stop_time', type : 'float'},
+              {name : 'stop_ratio', type : 'float'},
+              {name : 'remove_torrent', type : 'boolean'},
+              {name : 'remove_data', type : 'boolean'},
             ],
             id : 0
           }),
@@ -140,23 +143,40 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
             columns : [
               {
                 header : 'Field',
-                width : .24,
+                width : .10,
                 sortable : false,
                 dataIndex : 'field',
                 editor : combo,
                 renderer : Ext.util.Format.comboRenderer(combo),
               },
               { header : 'Filter',
-                width : .50,
+                width : .18,
                 dataIndex : 'filter',
                 editor : {xtype : 'textfield' },
               },
               { header : 'Stop Seed Time (days)',
-                width : .26,
+                width : .18,
                 editor : { xtype : 'numberfield',
                            maxValue : 365.0,
-                           minValue : 0.01 },
+                           minValue : 0.00 },
                 dataIndex : 'stoptime'
+              },
+              { header : 'Stop Min Ratio',
+                width : .18,
+                editor : { xtype : 'numberfield',
+                           maxValue : 999.0,
+                           minValue : 0.00 },
+                dataIndex : 'stop_ratio'
+              },
+              { header : 'Remove Torrent',
+                width : .18,
+                editor : { xtype : 'checkbox'},
+                dataIndex : 'remove_torrent'
+              },
+              { header : 'Remove Data',
+                width : .18,
+                editor : { xtype : 'checkbox'},
+                dataIndex : 'remove_data'
               },
             ]
           }),
@@ -204,7 +224,12 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
 
     filterAdd: function() {
         var store = this.filter_list.getStore();
-        store.insert(0, new store.recordType({ field : "label", filter : "RegEx", stoptime : 3.0}));
+        store.insert(0, new store.recordType({ field : "label",
+                                               filter : "RegEx",
+                                               stop_time : 7.0,
+                                               stop_ratio : 1.0,
+                                               remove_torrent : false,
+                                               remove_data : false}));
     },
 
     filterRemove: function() {
@@ -228,7 +253,6 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
 
             // build settings object
             var config = {};
-            config['remove_torrent'] = this.removeWhenStopped.getValue();
             config['filter_list'] = filter_items;
             config['delay_time'] = this.delayTime.getValue();
             config['default_stop_time'] = this.defaultStoptime.getValue();
@@ -278,7 +302,8 @@ Deluge.ux.CustomSeedtimeWindow = Ext.extend(Ext.Window, {
                     name: 'stoptime',
                     allowBlank: false,
                     maxValue : 365.0,
-                    minValue : 0.01,
+                    minValue : 0.00,
+                    decimalPrecision : 2,
                     width: 50,
                     listeners: {
                         'specialkey': {
@@ -288,7 +313,27 @@ Deluge.ux.CustomSeedtimeWindow = Ext.extend(Ext.Window, {
                             scope: this
                         }
                     }
-                }]
+                },
+                {
+                  fieldLabel : _('Minimum ratio'),
+                  name : 'stop_ratio',
+                  allowBlank: false,
+                  maxValue : 999,
+                  minValue : 0,
+                  decimalPrecision : 2,
+                  width : 50,
+                },
+                {
+                  xtype: 'checkbox',
+                  fieldLabel : _('Remove torrent'),
+                  name : 'remove_torrent',
+                },
+                {
+                  xtype: 'checkbox',
+                  fieldLabel : _('Remove data'),
+                  name : 'remove_data',
+                },
+            ]
         });
     },
 
@@ -298,6 +343,9 @@ Deluge.ux.CustomSeedtimeWindow = Ext.extend(Ext.Window, {
 
     onOkClick: function() {
         this.item.stoptime = this.form.getForm().findField('stoptime').getValue();
+        this.item.stopratio = this.form.getForm().findField('stop_ratio').getValue();
+        this.item.removetorrent = this.form.getForm().findField('remove_torrent').getValue();
+        this.item.removedata = this.form.getForm().findField('remove_data').getValue();
         this.setStoptime(this.item, this.e)
         this.hide();
     },
@@ -320,19 +368,28 @@ SeedTimePlugin = Ext.extend(Deluge.Plugin, {
     createMenu: function() {
         menuTimes = [1, 2, 3, 7, 14, 30],
         itemslist = [{  text: _('Never'),
-                        stoptime : -1,
+                        stoptime : 0,
+                        stopratio : 0,
+                        removetorrent : false,
+                        removedata : false,
                         handler: this.setStoptime,
                         scope: this
                 }];
         for(indx=0; indx < menuTimes.length; indx++) {
             itemslist.push({  text: _(menuTimes[indx] + ' Days'),
                         stoptime : menuTimes[indx],
+                        stopratio : 0,
+                        removetorrent : false,
+                        removedata : false,
                         handler: this.setStoptime,
                         scope: this
                     });
         }
         itemslist.push({text: _('Custom'),
                         stoptime : 1,
+                        stopratio : 0,
+                        removetorrent : false,
+                        removedata : false,
                         handler: this.setCustomStoptime,
                         scope: this
                         });
@@ -343,13 +400,15 @@ SeedTimePlugin = Ext.extend(Deluge.Plugin, {
         var ids = deluge.torrents.getSelectedIds();
         Ext.each(ids, function(id, i) {
             if (ids.length == i + 1) {
-                deluge.client.seedtime.set_torrent(id, item.stoptime, {
+                deluge.client.seedtime.set_torrent(id, item.stoptime, item.stopratio,
+                                                   item.removetorrent, item.removedata, {
                     success: function() {
                         deluge.ui.update();
                     }
                 });
             } else {
-                deluge.client.seedtime.set_torrent(id, item.stoptime);
+                deluge.client.seedtime.set_torrent(id, item.stoptime, item.stopratio,
+                                                   item.removetorrent, item.removedata);
             }
         });
     },
@@ -371,6 +430,7 @@ SeedTimePlugin = Ext.extend(Deluge.Plugin, {
         this.deregisterTorrentStatus('seeding_time');
         this.deregisterTorrentStatus('seed_stop_time');
         this.deregisterTorrentStatus('seed_time_remaining');
+        this.deregisterTorrentStatus('seed_min_ratio');
     },
 
     onEnable: function() {
@@ -399,6 +459,9 @@ SeedTimePlugin = Ext.extend(Deluge.Plugin, {
             { colCfg : { sortable : true, renderer : ftimewithnull}});
         this.registerTorrentStatus('seed_time_remaining', _('Remaining Seed Time'),
             { colCfg : { sortable : true, renderer : ftimewithnull}});
+        this.registerTorrentStatus('seed_min_ratio', _('Seed Min Ratio'),
+            { colCfg : { sortable : true,
+                renderer : function(r){return r.toPrecision(2)}}});
     }
 });
 Deluge.registerPlugin('SeedTime', SeedTimePlugin);
