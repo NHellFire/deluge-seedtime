@@ -69,13 +69,6 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
           labelWidth : 200,
           items : [
             {
-              xtype : "checkbox",
-              fieldLabel : 'Remove torrent when stopping',
-              name : 'chk_remove_torrent',
-              checked : true,
-              id : 'rm_torrent_checkbox'
-            },
-            {
               fieldLabel : _('Default stop time (days)'),
               name : 'default_stop_time',
               width : 80,
@@ -84,6 +77,16 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
               maxValue : 999,
               decimalPrecision : 2,
               id : 'default_stop_time'
+            },
+            {
+              fieldLabel : _('Default minimum ratio'),
+              name : 'default_min_ratio',
+              width : 80,
+              value : 30,
+              minValue : 0,
+              maxValue : 999,
+              decimalPrecision : 2,
+              id : 'default_min_ratio'
             },
             {
               fieldLabel : _('Delay (seconds)'),
@@ -168,7 +171,7 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
         this.form.add(this.filter_list);
 
         this.defaultStoptime = this.settings.items.get("default_stop_time");
-        this.removeWhenStopped = this.settings.items.get("rm_torrent_checkbox");
+        this.defaultMinRatio = this.settings.items.get("default_min_ratio");
         this.delayTime = this.settings.items.get("torrent_delay");
         this.on('show', this.updateConfig, this);
     },
@@ -229,6 +232,7 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
             config['filter_list'] = filter_items;
             config['delay_time'] = this.delayTime.getValue();
             config['default_stop_time'] = this.defaultStoptime.getValue();
+            config['default_minimum_stop_ratio'] = this.defaultMinRatio.getValue();
             deluge.client.seedtime.set_config(config);
         }
     },
@@ -240,10 +244,10 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
     updateConfig: function() {
         deluge.client.seedtime.get_config({
             success: function(config) {
-                this.removeWhenStopped.setValue(config['remove_torrent']);
                 this.filter_list.getStore().loadData(config['filter_list']);
                 this.delayTime.setValue(config['delay_time']);
                 this.defaultStoptime.setValue(config['default_stop_time']);
+                this.defaultMinRatio.setValue(config['default_minimum_stop_ratio']);
                 this.hasReadConfig = true;
             },
             scope: this
