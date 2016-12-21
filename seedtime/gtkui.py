@@ -44,10 +44,14 @@ from deluge.log import LOG as log
 from deluge.ui.client import client
 from deluge.plugins.pluginbase import GtkPluginBase
 import deluge.component as component
-from deluge.ui.gtkui.listview import cell_data_time
+from deluge.ui.gtkui.listview import cell_data_time, cell_data_ratio
 
 from common import get_resource
 
+# TODO: fix, Seed Min Ratio coloumn is not displaying properly
+
+def cell_data_ratio_seed_min(column, cell, model, row, data):
+    cell_data_ratio(cell, model, row, data, 'cell_data_ratio_seed_min')
 
 class GtkUI(GtkPluginBase):
     def enable(self):
@@ -61,6 +65,7 @@ class GtkUI(GtkPluginBase):
         torrentview.add_func_column(_("Seed Time"), cell_data_time, [int], status_field=["seeding_time"])
         torrentview.add_func_column(_("Stop Seed Time"), cell_data_time, [int], status_field=["seed_stop_time"])
         torrentview.add_func_column(_("Remaining Seed Time"), cell_data_time, [int], status_field=["seed_time_remaining"])
+        torrentview.add_func_column(_("Seed Min Ratio"), cell_data_ratio_seed_min, [float], status_field=["seed_min_ratio"])
         # Submenu
         log.debug("add items to torrentview-popup menu.")
         torrentmenu = component.get("MenuBar").torrentmenu
@@ -125,7 +130,7 @@ class GtkUI(GtkPluginBase):
         renderer = gtk.CellRendererSpin()
         renderer.connect("edited", self.on_stoptime_edited)
         renderer.set_property("editable", True)
-        adjustment = gtk.Adjustment(0, 0, 100, 1, 10, 0)
+        adjustment = gtk.Adjustment(0, 0, 100, 0.01, 10, 0)
         renderer.set_property("adjustment", adjustment)
         column = gtk.TreeViewColumn("Stop Seed Time (days)", renderer, text=2)
         label = gtk.Label("Stop Seed Time (days)")
@@ -134,6 +139,48 @@ class GtkUI(GtkPluginBase):
         tooltips = Tooltips()
         tooltips.set_tip(label, "Set the amount of time a torrent seeds for "
                                 "before being stopped. Default value is editable")
+        self.treeview.append_column(column)
+        
+        # setup min ratio column
+        renderer = gtk.CellRendererSpin()
+        renderer.connect("edited", self.on_min_ratio_edited)
+        renderer.set_property("editable", True)
+        adjustment = gtk.Adjustment(0, 0, 100, 0.01, 1, 0)
+        renderer.set_property("adjustment", adjustment)
+        column = gtk.TreeViewColumn("Stop Min Ratio", renderer, text=3)
+        label = gtk.Label("Stop Min Ratio")
+        column.set_widget(label)
+        label.show()
+        tooltips = Tooltips()
+        tooltips.set_tip(label, "Set the minimum ratio, after which a seeding "
+                                "torrent will stop. Default value is editable")
+        self.treeview.append_column(column)
+
+        # setup remove torrent column
+        renderer = gtk.CellRendererToggle()
+        renderer.connect("toggled", self.on_remove_torrent_edited)
+        renderer.set_property("activatable", True)
+        column = gtk.TreeViewColumn("Remove Torrent", renderer, text=4)
+        label = gtk.Label("Remove Torrent")
+        column.set_widget(label)
+        label.show()
+        tooltips = Tooltips()
+        tooltips.set_tip(label, "Set if a torrent is removed when stop seedtime "
+                                "conditions are met")
+        self.treeview.append_column(column)
+
+        # setup remove data column
+        renderer = gtk.CellRendererToggle()
+        renderer.connect("toggled", self.on_remove_data_edited)
+        renderer.set_property("activatable", True)
+        column = gtk.TreeViewColumn("Remove Data", renderer, text=5)
+        label = gtk.Label("Remove Data")
+        column.set_widget(label)
+        label.show()
+        tooltips = Tooltips()
+        tooltips.set_tip(label, "Set if a torrent's data is removed when stop "
+                                "seedtime conditions are met, remove torrent "
+                                "must also be set")
         self.treeview.append_column(column)
 
         self.sw1 = self.glade.get_widget('scrolledwindow1')
@@ -149,6 +196,7 @@ class GtkUI(GtkPluginBase):
             component.get("TorrentView").remove_column(_("Seed Time"))
             component.get("TorrentView").remove_column(_("Stop Seed Time"))
             component.get("TorrentView").remove_column(_("Remaining Seed Time"))
+            component.get("TorrentView").remove_column(_("Seed Min Ratio"))
             # Submenu
             torrentmenu = component.get("MenuBar").torrentmenu
             torrentmenu.remove(self.seedtime_menu)
@@ -159,10 +207,10 @@ class GtkUI(GtkPluginBase):
         log.debug("applying prefs for SeedTime")
 
         config = {
-            "remove_torrent": self.glade.get_widget("chk_remove_torrent").get_active(),
-            "filter_list": list({'field': row[0], 'filter': row[1], 'stop_time': row[2]} for row in self.liststore),
-            "delay_time": self.glade.get_widget("delay_time").get_value_as_int(),
             "default_stop_time": self.glade.get_widget("default_stop_time").get_value(),
+            "default_minimum_stop_ratio": self.glade.get_widget("default_min_ratio").get_value(),
+            "delay_time": self.glade.get_widget("delay_time").get_value_as_int(),
+            "filter_list": list({'field': row[0], 'filter': row[1], 'stop_time': row[2], 'ratio': row[3], 'remove_torrent': row[4], 'remove_data': row[5]} for row in self.liststore),
         }
         client.seedtime.set_config(config)
 
@@ -172,14 +220,17 @@ class GtkUI(GtkPluginBase):
     def cb_get_config(self, config):
         """callback for on show_prefs"""
         log.debug('cb get config seedtime')
-        self.glade.get_widget("chk_remove_torrent").set_active(config["remove_torrent"])
         self.glade.get_widget("delay_time").set_value(config["delay_time"])
         self.glade.get_widget("default_stop_time").set_value(config["default_stop_time"])
+        self.glade.get_widget("default_min_ratio").set_value(config["default_minimum_stop_ratio"])
 
         # populate filter table
-        self.liststore = gtk.ListStore(str, str, float)
+        self.liststore = gtk.ListStore(str, str, float, float, bool, bool)
         for filter_ref in config['filter_list']:
-            self.liststore.append([filter_ref['field'], filter_ref['filter'], filter_ref['stop_time']])
+            self.liststore.append([filter_ref['field'], filter_ref['filter'],
+                                   filter_ref['stop_time'], filter_ref['ratio'],
+                                   filter_ref['remove_torrent'],
+                                   filter_ref['remove_data']])
 
         self.treeview.set_model(self.liststore)
 
@@ -192,8 +243,17 @@ class GtkUI(GtkPluginBase):
     def on_stoptime_edited(self, widget, path, value):
         self.liststore[path][2] = float(value)
 
+    def on_min_ratio_edited(self, widget, path, value):
+        self.liststore[path][3] = float(value)
+
+    def on_remove_torrent_edited(self, widget, path, value):
+        self.liststore[path][4] = bool(value)
+
+    def on_remove_data_edited(self, widget, path, value):
+        self.liststore[path][5] = bool(value)
+
     def btnAddCallback(self, widget):
-        self.liststore.prepend(["label", "RegEx", 3.0])
+        self.liststore.prepend(["label", "RegEx", 3.0, 1.0, False, False])
 
     def btnRemoveCallback(self, widget):
         selection = self.treeview.get_selection()
@@ -243,35 +303,39 @@ class SeedTimeMenu(gtk.MenuItem):
         try:
             for child in self.sub_menu.get_children():
                 self.sub_menu.remove(child)
-            # TODO: Make thise times customizable, and/or add a custom popup
-            for time in (None, 1, 2, 3, 7, 14, 30):
-                if time is None:
+            for time in (0, 1, 2, 3, 7, 14, 30):
+                if time is 0:
                     item = gtk.MenuItem('Never')
                 else:
                     item = gtk.MenuItem(str(time) + ' days')
-                item.connect("activate", self.on_select_time, time)
+                item.connect("activate", self.on_select_criteria, time)
                 self.sub_menu.append(item)
             item = gtk.MenuItem('Custom')
-            item.connect('activate', self.on_custom_time)
+            item.connect('activate', self.on_custom_criteria)
             self.sub_menu.append(item)
             self.show_all()
         except Exception, e:
             log.exception('AHH!')
 
-    def on_select_time(self, widget=None, time=None):
-        log.debug("select seed stop time:%s,%s" % (time ,self.get_torrent_ids()) )
+    def on_select_criteria(self, widget=None, time=0, ratio=0, remove_torrent=False, remove_data=False):
+        log.debug("select seed stop time:%s, ratio:%s, remove torrent:%s, remove data:%s, %s" %
+                  (time, ratio, remove_torrent, remove_data, self.get_torrent_ids()) )
         for torrent_id in self.get_torrent_ids():
-            client.seedtime.set_torrent(torrent_id, time)
+            client.seedtime.set_torrent(torrent_id, time, ratio, remove_torrent, remove_data)
 
-    def on_custom_time(self, widget=None):
+    def on_custom_criteria(self, widget=None):
         # Show the custom time dialog
         glade = gtk.glade.XML(get_resource("config.glade"))
         dlg = glade.get_widget('dlg_custom_time')
         result = dlg.run()
         if result == gtk.RESPONSE_OK:
-            time = glade.get_widget('txt_custom_stop_time').get_text()
+            kwargs = {}
+            kwargs['time'] = glade.get_widget('custom_stop_time').get_value()
+            kwargs['ratio'] = glade.get_widget('custom_stop_ratio').get_value()
+            kwargs['remove_torrent'] = glade.get_widget('custom_remove_torrent').get_active()
+            kwargs['remove_data'] = glade.get_widget('custom_remove_data').get_active()
             try:
-                self.on_select_time(time=float(time))
+                self.on_select_criteria(**kwargs)
             except ValueError:
                 log.error('Invalid custom stop time entered.')
         dlg.destroy()
