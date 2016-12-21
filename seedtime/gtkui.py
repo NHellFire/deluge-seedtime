@@ -65,7 +65,7 @@ class GtkUI(GtkPluginBase):
         torrentview.add_func_column(_("Seed Time"), cell_data_time, [int], status_field=["seeding_time"])
         torrentview.add_func_column(_("Stop Seed Time"), cell_data_time, [int], status_field=["seed_stop_time"])
         torrentview.add_func_column(_("Remaining Seed Time"), cell_data_time, [int], status_field=["seed_time_remaining"])
-        torrentview.add_func_column(_("Seed Min Ratio"), cell_data_ratio_seed_min, [float], status_field=["seed_min_ratio"])
+        # torrentview.add_func_column(_("Seed Min Ratio"), cell_data_ratio_seed_min, [float], status_field=["seed_min_ratio"])
         # Submenu
         log.debug("add items to torrentview-popup menu.")
         torrentmenu = component.get("MenuBar").torrentmenu
@@ -196,7 +196,7 @@ class GtkUI(GtkPluginBase):
             component.get("TorrentView").remove_column(_("Seed Time"))
             component.get("TorrentView").remove_column(_("Stop Seed Time"))
             component.get("TorrentView").remove_column(_("Remaining Seed Time"))
-            component.get("TorrentView").remove_column(_("Seed Min Ratio"))
+            # component.get("TorrentView").remove_column(_("Seed Min Ratio"))
             # Submenu
             torrentmenu = component.get("MenuBar").torrentmenu
             torrentmenu.remove(self.seedtime_menu)
