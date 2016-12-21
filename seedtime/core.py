@@ -47,10 +47,10 @@ import deluge.configmanager
 from deluge.core.rpcserver import export
 
 CONFIG_DEFAULT = {
-    "default_stop_time": 7,
+    "default_stop_time": 7.0,
+    "default_minimum_stop_ratio": 1.0,
     "delay_time": 1,  # delay between adding torrent and setting initial seed time (in seconds)
     "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}],
-    "default_minimum_stop_ratio": 1.0,
     "torrent_stop_criteria": {} # torrent_id: {'time' : stop_time (in hours), 'ratio' : minimum ratio, 'remove_torrent' : boolean, 'remove_data' : boolean}
 }
 
@@ -66,7 +66,7 @@ class Core(CorePluginBase):
         self.plugin = component.get("CorePluginManager")
         self.plugin.register_status_field("seed_stop_time", self._status_get_seed_stop_time)
         self.plugin.register_status_field("seed_time_remaining", self._status_get_remaining_seed_time)
-        self.plugin.register_status_field("min_ratio", self._status_get_seed_stop_ratio)
+        self.plugin.register_status_field("seed_min_ratio", self._status_get_seed_stop_ratio)
         self.torrent_manager = component.get("TorrentManager")
 
         component.get("EventManager").register_event_handler("TorrentAddedEvent", self.post_torrent_add)
@@ -82,7 +82,7 @@ class Core(CorePluginBase):
     def disable(self):
         self.plugin.deregister_status_field("seed_stop_time")
         self.plugin.deregister_status_field("seed_time_remaining")
-        self.plugin.deregister_status_field("min_ratio")
+        self.plugin.deregister_status_field("seed_min_ratio")
         if self.looping_call.running:
             self.looping_call.stop()
 
@@ -96,14 +96,13 @@ class Core(CorePluginBase):
                 continue
             criteria = self.torrent_stop_criteria[torrent.torrent_id]
             torrent_status = torrent.get_status(['seeding_time', 'ratio'])
-            if criteria['seeding_time'] > 0 or criteria['ratio'] > 0:
-                seed_time_met = torrent_status['seeding_time'] > criteria['time'] * 3600.0 * 24.0 or torrent_status['seeding_time'] <= 0
-                ratio_met = torrent_status['ratio'] > criteria['ratio'] or torrent_status['ratio'] <= 0
-                if seed_time_met or ratio_met:
-                    if criteria['remove_torrent']:
-                        self.torrent_manager.remove(torrent.torrent_id, criteria['remove_data'])
-                    else:
-                        torrent.pause()
+            seed_time_met = criteria['time'] > 0 and torrent_status['seeding_time'] > criteria['time'] * 3600.0 * 24.0
+            ratio_met = criteria['ratio'] > 0 and torrent_status['ratio'] > criteria['ratio']
+            if seed_time_met or ratio_met:
+                if criteria['remove_torrent']:
+                    self.torrent_manager.remove(torrent.torrent_id, criteria['remove_data'])
+                else:
+                    torrent.pause()
 
     ## Plugin hooks ##
     def post_torrent_add(self, torrent_id):
@@ -176,7 +175,7 @@ class Core(CorePluginBase):
         return self.config.config
 
     @export
-    def set_torrent(self, torrent_id , stop_time=None, min_ratio=None, remove_torrent=false, remove_data=false):
+    def set_torrent(self, torrent_id , stop_time=None, min_ratio=None, remove_torrent=False, remove_data=False):
         if stop_time is None:
             stop_time = 0.0
         if min_ratio is None:
@@ -210,4 +209,3 @@ class Core(CorePluginBase):
         if torrent_id in self.torrent_stop_criteria:
             ratio = self.torrent_stop_criteria[torrent_id]['ratio']
         return ratio
-
