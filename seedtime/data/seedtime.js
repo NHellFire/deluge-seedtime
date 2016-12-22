@@ -283,9 +283,9 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
 
 Deluge.ux.CustomSeedtimeWindow = Ext.extend(Ext.Window, {
 
-    title: _('Custom Stop Time'),
+    title: _('Custom Stop Criteria'),
     width: 300,
-    height: 100,
+    height: 175,
 
     initComponent: function() {
         Deluge.ux.CustomSeedtimeWindow.superclass.initComponent.call(this);
@@ -294,7 +294,7 @@ Deluge.ux.CustomSeedtimeWindow = Ext.extend(Ext.Window, {
 
         this.form = this.add({
             xtype: 'form',
-            height: 35,
+            layout: 'form',
             baseCls: 'x-plain',
             bodyStyle:'padding:5px 5px 0',
             defaultType: 'numberfield',
