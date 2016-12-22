@@ -38,7 +38,6 @@
 #
 
 # TODO: fix, Seed Min Ratio coloumn is not displaying properly
-# TODO: fix, checkboxes in grid are not editable
 
 import gtk
 from gtk._gtk import Tooltips
@@ -173,7 +172,6 @@ class GtkUI(GtkPluginBase):
         renderer.set_property("activatable", True)
         column = gtk.TreeViewColumn("Remove\nTorrent", renderer, active=4)
         column.set_property("resizable", True)
-        # column.set_cell_data_func(renderer, rowRendererCb)
         label = gtk.Label("Remove\nTorrent")
         label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
@@ -262,11 +260,11 @@ class GtkUI(GtkPluginBase):
     def on_min_ratio_edited(self, widget, path, value):
         self.liststore[path][3] = float(value)
 
-    def on_remove_torrent_edited(self, widget, path, value):
-        self.liststore[path][4] = bool(value)
+    def on_remove_torrent_edited(self, widget, path):
+        self.liststore[path][4] = not self.liststore[path][4]
 
-    def on_remove_data_edited(self, widget, path, value):
-        self.liststore[path][5] = bool(value)
+    def on_remove_data_edited(self, widget, path):
+        self.liststore[path][5] = not self.liststore[path][5]
 
     def btnAddCallback(self, widget):
         self.liststore.prepend(["label", "RegEx", 3.0, 1.0, False, False])
