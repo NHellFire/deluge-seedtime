@@ -30,8 +30,7 @@ Copyright:
     this exception statement from your version. If you delete this exception
     statement from all source files in the program, then also delete it here.
 */
-// TODO: multiline header
-// TODO: grid horizontal scroll
+// TODO: layout for customTimeWindow
 
 
 // TODO: add same tooltips as gtk
@@ -144,40 +143,39 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
           colModel : new Ext.grid.ColumnModel({
             defaults : {sortable : false, menuDisabled : true},
             columns : [
-              {
-                header : 'Field',
-                width : .10,
+              { header : '<small>Field</small>',
+                width : .15,
                 sortable : false,
                 dataIndex : 'field',
                 editor : combo,
                 renderer : Ext.util.Format.comboRenderer(combo),
               },
-              { header : 'Filter',
-                width : .18,
+              { header : '<small>Filter</small>',
+                width : .21,
                 dataIndex : 'filter',
                 editor : {xtype : 'textfield' },
               },
-              { header : 'Stop Seed\nTime (days)',
-                width : .18,
+              { header : '<small>Stop Seed<br>Time (days)</small>',
+                width : .17,
                 editor : { xtype : 'numberfield',
                            maxValue : 365.0,
                            minValue : 0.00 },
                 dataIndex : 'stop_time'
               },
-              { header : 'Stop\nMin Ratio',
-                width : .18,
+              { header : '<small>Stop<br>Min Ratio</small>',
+                width : .17,
                 editor : { xtype : 'numberfield',
                            maxValue : 999.0,
                            minValue : 0.00 },
                 dataIndex : 'stop_ratio'
               },
-              { header : 'Remove\nTorrent',
-                width : .18,
+              { header : '<small>Remove<br>Torrent</small>',
+                width : .15,
                 xtype : 'checkcolumn',
                 dataIndex : 'remove_torrent'
               },
-              { header : 'Remove\nData',
-                width : .18,
+              { header : '<small>Remove<br>Data</small>',
+                width : .15,
                 xtype : 'checkcolumn',
                 dataIndex : 'remove_data'
               },
