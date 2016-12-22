@@ -30,6 +30,9 @@ Copyright:
     this exception statement from your version. If you delete this exception
     statement from all source files in the program, then also delete it here.
 */
+// TODO: multiline header
+// TODO: grid horizontal scroll
+
 
 // TODO: add same tooltips as gtk
 // TODO: fix perferance page layout, filter list grid automatic height
@@ -37,8 +40,8 @@ Copyright:
 // TODO: clean up: fix code formatting
 
 Ext.ns('Deluge.ux');
-
 Ext.ns('Deluge.ux.preferences');
+Ext.ns('Ext.ux.grid');
 
 Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
     border: false,
@@ -154,34 +157,35 @@ Deluge.ux.preferences.SeedTimePage = Ext.extend(Ext.Panel, {
                 dataIndex : 'filter',
                 editor : {xtype : 'textfield' },
               },
-              { header : 'Stop Seed Time (days)',
+              { header : 'Stop Seed\nTime (days)',
                 width : .18,
                 editor : { xtype : 'numberfield',
                            maxValue : 365.0,
                            minValue : 0.00 },
-                dataIndex : 'stoptime'
+                dataIndex : 'stop_time'
               },
-              { header : 'Stop Min Ratio',
+              { header : 'Stop\nMin Ratio',
                 width : .18,
                 editor : { xtype : 'numberfield',
                            maxValue : 999.0,
                            minValue : 0.00 },
                 dataIndex : 'stop_ratio'
               },
-              { header : 'Remove Torrent',
+              { header : 'Remove\nTorrent',
                 width : .18,
-                editor : { xtype : 'checkbox'},
+                xtype : 'checkcolumn',
                 dataIndex : 'remove_torrent'
               },
-              { header : 'Remove Data',
+              { header : 'Remove\nData',
                 width : .18,
-                editor : { xtype : 'checkbox'},
+                xtype : 'checkcolumn',
                 dataIndex : 'remove_data'
               },
             ]
           }),
           viewConfig : {forceFit : true},
           selModel : new Ext.grid.RowSelectionModel({singleSelect : true, moveEditorOnEnter : false}),
+          plugins : [],
         });
 
         this.filter_list.addButton({text:"Up", iconCls: 'icon-up'}, this.filterUp, this);

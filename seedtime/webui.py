@@ -47,5 +47,5 @@ log = logging.getLogger(__name__)
 
 class WebUI(WebPluginBase):
 
-    scripts = [get_resource("seedtime.js")]
+    scripts = [get_resource("seedtime.js"), get_resource("checkcolumn.js")]
     debug_scripts = scripts
