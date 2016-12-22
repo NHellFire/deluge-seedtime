@@ -350,7 +350,7 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="n_rows">5</property>
-            <property name="n_columns">2</property>
+            <property name="n_columns">5</property>
             <child>
               <widget class="GtkScrolledWindow" id="scrolledwindow1">
                 <property name="visible">True</property>
@@ -362,7 +362,8 @@
                 </child>
               </widget>
               <packing>
-                <property name="bottom_attach">5</property>
+                <property name="right_attach">5</property>
+                <property name="bottom_attach">4</property>
               </packing>
             </child>
             <child>
@@ -375,10 +376,10 @@
                 <property name="use_stock">True</property>
               </widget>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="top_attach">2</property>
-                <property name="bottom_attach">3</property>
+                <property name="left_attach">2</property>
+                <property name="right_attach">3</property>
+                <property name="top_attach">4</property>
+                <property name="bottom_attach">5</property>
                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                 <property name="y_options">GTK_SHRINK</property>
               </packing>
@@ -393,10 +394,10 @@
                 <property name="use_stock">True</property>
               </widget>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="top_attach">3</property>
-                <property name="bottom_attach">4</property>
+                <property name="left_attach">3</property>
+                <property name="right_attach">4</property>
+                <property name="top_attach">4</property>
+                <property name="bottom_attach">5</property>
                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                 <property name="y_options">GTK_SHRINK</property>
               </packing>
@@ -411,8 +412,8 @@
                 <property name="use_stock">True</property>
               </widget>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
+                <property name="top_attach">4</property>
+                <property name="bottom_attach">5</property>
                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                 <property name="y_options">GTK_SHRINK</property>
               </packing>
@@ -429,8 +430,8 @@
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
-                <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
+                <property name="top_attach">4</property>
+                <property name="bottom_attach">5</property>
                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                 <property name="y_options">GTK_SHRINK</property>
               </packing>
@@ -441,8 +442,8 @@
                 <property name="can_focus">False</property>
               </widget>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
+                <property name="left_attach">4</property>
+                <property name="right_attach">5</property>
                 <property name="top_attach">4</property>
                 <property name="bottom_attach">5</property>
                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
