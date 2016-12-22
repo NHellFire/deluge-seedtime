@@ -37,6 +37,9 @@
 #    statement from all source files in the program, then also delete it here.
 #
 
+# TODO: fix, Seed Min Ratio coloumn is not displaying properly
+# TODO: fix, checkboxes in grid are not editable
+
 import gtk
 from gtk._gtk import Tooltips
 
@@ -48,10 +51,10 @@ from deluge.ui.gtkui.listview import cell_data_time, cell_data_ratio
 
 from common import get_resource
 
-# TODO: fix, Seed Min Ratio coloumn is not displaying properly
 
 def cell_data_ratio_seed_min(column, cell, model, row, data):
     cell_data_ratio(cell, model, row, data, 'cell_data_ratio_seed_min')
+
 
 class GtkUI(GtkPluginBase):
     def enable(self):
@@ -105,8 +108,10 @@ class GtkUI(GtkPluginBase):
         renderer.set_property("has-entry", False)
         renderer.connect("edited", self.on_field_changed)
         column = gtk.TreeViewColumn("Field", renderer, text=0)
+        column.set_property("resizable", True)
         column.set_cell_data_func(renderer, rowRendererCb)
         label = gtk.Label("Field")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
@@ -118,8 +123,10 @@ class GtkUI(GtkPluginBase):
         renderer.set_property("editable", True)
         renderer.connect("edited", self.on_filter_changed)
         column = gtk.TreeViewColumn("Filter", renderer, text=1)
+        column.set_property("resizable", True)
         column.set_cell_data_func(renderer, rowRendererCb)
         label = gtk.Label("Filter")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
@@ -132,8 +139,10 @@ class GtkUI(GtkPluginBase):
         renderer.set_property("editable", True)
         adjustment = gtk.Adjustment(0, 0, 100, 0.01, 10, 0)
         renderer.set_property("adjustment", adjustment)
-        column = gtk.TreeViewColumn("Stop Seed Time (days)", renderer, text=2)
-        label = gtk.Label("Stop Seed Time (days)")
+        column = gtk.TreeViewColumn("Stop Seed\nTime (days)", renderer, text=2)
+        column.set_property("resizable", True)
+        label = gtk.Label("Stop Seed\nTime (days)")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
@@ -147,8 +156,10 @@ class GtkUI(GtkPluginBase):
         renderer.set_property("editable", True)
         adjustment = gtk.Adjustment(0, 0, 100, 0.01, 1, 0)
         renderer.set_property("adjustment", adjustment)
-        column = gtk.TreeViewColumn("Stop Min Ratio", renderer, text=3)
-        label = gtk.Label("Stop Min Ratio")
+        column = gtk.TreeViewColumn("Stop\nMin Ratio", renderer, text=3)
+        column.set_property("resizable", True)
+        label = gtk.Label("Stop\nMin Ratio")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
@@ -160,8 +171,11 @@ class GtkUI(GtkPluginBase):
         renderer = gtk.CellRendererToggle()
         renderer.connect("toggled", self.on_remove_torrent_edited)
         renderer.set_property("activatable", True)
-        column = gtk.TreeViewColumn("Remove Torrent", renderer, text=4)
-        label = gtk.Label("Remove Torrent")
+        column = gtk.TreeViewColumn("Remove\nTorrent", renderer, active=4)
+        column.set_property("resizable", True)
+        # column.set_cell_data_func(renderer, rowRendererCb)
+        label = gtk.Label("Remove\nTorrent")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
@@ -173,8 +187,10 @@ class GtkUI(GtkPluginBase):
         renderer = gtk.CellRendererToggle()
         renderer.connect("toggled", self.on_remove_data_edited)
         renderer.set_property("activatable", True)
-        column = gtk.TreeViewColumn("Remove Data", renderer, text=5)
-        label = gtk.Label("Remove Data")
+        column = gtk.TreeViewColumn("Remove\nData", renderer, active=5)
+        column.set_property("resizable", True)
+        label = gtk.Label("Remove\nData")
+        label.set_property("justify", gtk.JUSTIFY_CENTER)
         column.set_widget(label)
         label.show()
         tooltips = Tooltips()
