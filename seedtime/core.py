@@ -46,6 +46,7 @@ import deluge.component as component
 import deluge.configmanager
 from deluge.core.rpcserver import export
 
+CONFIG_VERSION = 2
 CONFIG_DEFAULT = {
     "default_stop_time": 7.0,
     "default_minimum_stop_ratio": 1.0,
@@ -57,7 +58,8 @@ CONFIG_DEFAULT = {
 class Core(CorePluginBase):
 
     def enable(self):
-        self.config = deluge.configmanager.ConfigManager("seedtime.conf", CONFIG_DEFAULT)
+        self.config = deluge.configmanager.ConfigManager("seedtime.conf", CONFIG_DEFAULT, CONFIG_VERSION)
+        self.config.run_converter((0, 1), 2, self.__migrate_config_1_to_2)
         self.torrent_stop_criteria = self.config["torrent_stop_criteria"]
         self.delay_time = self.config["delay_time"]
         self.torrent_manager = component.get("TorrentManager")
@@ -72,6 +74,32 @@ class Core(CorePluginBase):
 
         self.looping_call = LoopingCall(self.update_checker)
         deferLater(reactor, 5, self.start_looping)
+
+    def __migrate_config_1_to_2(config_1):
+        # # config 1 format
+        # CONFIG_DEFAULT = {
+        #     "default_stop_time": 7,
+        #     "apply_stop_time": False,
+        #     "remove_torrent": False,
+        #     "torrent_stop_times":{} # torrent_id: stop_time (in hours)
+        # }
+        # # config 1.1 format
+        # CONFIG_DEFAULT = {
+        #     "remove_torrent": False,
+        #     "filter_list": [{'field': 'default', 'filter': ".*", 'stop_time': 7.0}],
+        #     "torrent_stop_times": {},  # torrent_id: stop_time (in hours)
+        #     "delay_time": 1  # delay between adding torrent and setting initial seed time (in seconds)
+        # }
+        # # config 1.2 format
+        # CONFIG_DEFAULT = {
+        #     "default_stop_time": 7,
+        #     "remove_torrent": False,
+        #     "delay_time": 1,  # delay between adding torrent and setting initial seed time (in seconds)
+        #     "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}],
+        #     "torrent_stop_times": {}  # torrent_id: stop_time (in hours)
+        # }
+        config_2 = config_1
+        return config_2
 
     def start_looping(self):
         log.warning('seedtime loop starting')
