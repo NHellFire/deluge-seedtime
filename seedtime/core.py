@@ -48,10 +48,10 @@ from deluge.core.rpcserver import export
 
 CONFIG_VERSION = 2
 CONFIG_DEFAULT = {
-    "default_stop_time": 7.0,
-    "default_minimum_stop_ratio": 1.0,
+    "default_stop_time": 0.0,
+    "default_minimum_stop_ratio": 0.0,
     "delay_time": 1,  # delay between adding torrent and setting initial seed time (in seconds)
-    "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}, 'stop_ratio': 1.0}, 'remove_torrent': False}, 'remove_data': False}],
+    "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0, 'stop_ratio': 1.0, 'remove_torrent': False, 'remove_data': False}
     "torrent_stop_criteria": {} # torrent_id: {'stop_time' : stop time (in hours), 'stop_ratio' : minimum ratio, 'remove_torrent' : boolean, 'remove_data' : boolean}
 }
 
@@ -76,21 +76,50 @@ class Core(CorePluginBase):
         deferLater(reactor, 5, self.start_looping)
 
     def __migrate_config_1_to_2(config_1):
-        # # config 1 format
+        config_2 = CONFIG_DEFAULT.copy()
+        # # config 1 format, Seedtime v0.5
         # CONFIG_DEFAULT = {
         #     "default_stop_time": 7,
         #     "apply_stop_time": False,
         #     "remove_torrent": False,
         #     "torrent_stop_times":{} # torrent_id: stop_time (in hours)
         # }
-        # # config 1.1 format
+        if 'filter_list' not in config_1:
+            config_2['default_stop_time'] = config_1['default_stop_time']
+            for torrent_id in config_1['torrent_stop_times']:
+                config_2['torrent_stop_criteria'][torrent_id] = {'stop_time' : config_1['torrent_stop_times'][torrent_id],
+                                                                 'stop_ratio' : 0,
+                                                                 'remove_torrent' : config_1['remove_torrent'],
+                                                                 'remove_data' : False}
+
+        # # config 1.1 format, Seedtime vanossj fork up to b9e294896a8b2f95ef83f7574c96d1196ea54936
         # CONFIG_DEFAULT = {
         #     "remove_torrent": False,
         #     "filter_list": [{'field': 'default', 'filter': ".*", 'stop_time': 7.0}],
         #     "torrent_stop_times": {},  # torrent_id: stop_time (in hours)
         #     "delay_time": 1  # delay between adding torrent and setting initial seed time (in seconds)
         # }
-        # # config 1.2 format
+        elif 'default_stop_time' not in config_1:
+            config_2['delay_time'] = config_1['delay_time']
+
+            for filt in config_1['filter_list']:
+                if filt['field'] == 'default':
+                    config_2['default_stop_time'] = config_1['filter_list'][-1]['stop_time']
+                else:
+                    config_2['filter_list'].append({ 'field': filt['field'],
+                                                     'filter': filt['filter'],
+                                                     'stop_time': filt['stop_time'],
+                                                     'stop_ratio': 0,
+                                                     'remove_torrent': config_1['remove_torrent'],
+                                                     'remove_data': False})
+
+            for torrent_id in config_1['torrent_stop_times']:
+                config_2['torrent_stop_criteria'][torrent_id] = {'stop_time' : config_1['torrent_stop_times'][torrent_id],
+                                                                 'stop_ratio' : 0,
+                                                                 'remove_torrent' : config_1['remove_torrent'],
+                                                                 'remove_data' : False}
+
+        # # config 1.2 format, Seedtime vanossj fork, fe374214dde56fa8139c463090df5016552dcd33 to config format 2 finalization
         # CONFIG_DEFAULT = {
         #     "default_stop_time": 7,
         #     "remove_torrent": False,
@@ -98,7 +127,24 @@ class Core(CorePluginBase):
         #     "filter_list": [], #example: {'field': 'tracker', 'filter': ".*", 'stop_time': 7.0}],
         #     "torrent_stop_times": {}  # torrent_id: stop_time (in hours)
         # }
-        config_2 = config_1
+        else:
+            config_2['default_stop_time'] = config_1['default_stop_time']
+            config_2['delay_time'] = config_1['delay_time']
+
+            for filt in config_1['filter_list']:
+                config_2['filter_list'].append({ 'field': filt['field'],
+                                                 'filter': filt['filter'],
+                                                 'stop_time': filt['stop_time'],
+                                                 'stop_ratio': 0,
+                                                 'remove_torrent': config_1['remove_torrent'],
+                                                 'remove_data': False})
+
+            for torrent_id in config_1['torrent_stop_times']:
+                config_2['torrent_stop_criteria'][torrent_id] = {'stop_time' : config_1['torrent_stop_times'][torrent_id],
+                                                                 'stop_ratio' : 0,
+                                                                 'remove_torrent' : config_1['remove_torrent'],
+                                                                 'remove_data' : False}
+
         return config_2
 
     def start_looping(self):
@@ -173,7 +219,7 @@ class Core(CorePluginBase):
                                   'remove_data' : filter_list['remove_data']}
                         log.debug('filter %s matched %s %s' %
                                   (filter_list['filter'], filter_list['field'], search_str))
-                        log.debug('applying default stop.... time %r ... ratio %r ... remove torrent %r ... remove data %r' % 
+                        log.debug('applying default stop.... time %r ... ratio %r ... remove torrent %r ... remove data %r' %
                                   (kwargs['stop_time'], kwargs['min_ratio'], kwargs['remove_torrent'], kwargs['remove_data']))
                         match_found = True
                         self.set_torrent(torrent_id, **kwargs)
@@ -183,7 +229,7 @@ class Core(CorePluginBase):
         else: #apply default if no filters match
             kwargs = {'stop_time' : self.config['default_stop_time'],
                       'min_ratio' : self.config['default_minimum_stop_ratio']}
-            log.debug('applying default stop.... time %r ... ratio %r' % 
+            log.debug('applying default stop.... time %r ... ratio %r' %
                       (kwargs['stop_time'], kwargs['min_ratio']))
             self.set_torrent(torrent_id, **kwargs)
 
